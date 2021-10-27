@@ -1,14 +1,11 @@
-package br.com.alura.leilao.ui.activity;
+package br.com.alura.leilao.ui;
 
 import android.content.Context;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -22,16 +19,16 @@ import br.com.alura.leilao.api.retrofit.client.RespostaListener;
 import br.com.alura.leilao.model.Leilao;
 import br.com.alura.leilao.ui.recyclerview.adapter.ListaLeilaoAdapter;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ListaLeilaoActivityTest {
 
-//    @Mock
-//    private Context context;
+@RunWith(MockitoJUnitRunner.class)
+public class AtualizadorDeLeiloesTest {
+
+    @Mock
+    private Context context;
 
     @Mock
     private LeilaoWebClient client;
@@ -39,13 +36,14 @@ public class ListaLeilaoActivityTest {
     @Mock
     private ListaLeilaoAdapter adapter;
 
-//    @Spy
-//    private ListaLeilaoAdapter adapter = new ListaLeilaoAdapter(context);
+    @Mock
+    private AtualizadorDeLeiloes.ErroCarregaLeiloesListener listener;
+
 
     @Test
     public void deve_AtualizarListaDeLeiloes_QuandoBuscarLeiloesDaApi() throws InterruptedException {
-        ListaLeilaoActivity activity = new ListaLeilaoActivity();
-       // Mockito.doNothing().when(adapter).atualizaLista();
+        AtualizadorDeLeiloes atualizador = new AtualizadorDeLeiloes();
+        // Mockito.doNothing().when(adapter).atualizaLista();
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -57,18 +55,37 @@ public class ListaLeilaoActivityTest {
                 )));
                 return null;
             }
-        }).when(client).todos(ArgumentMatchers.any(RespostaListener.class));
+        }).when(client).todos(any(RespostaListener.class));
 
-       // activity.buscaLeiloes(adapter, client);
+        atualizador.buscaLeiloes(adapter, client, listener);
         Thread.sleep(2000);
         int quantidadeDeLeiloesDevolvidas = adapter
                 .getItemCount();
 
-     verify(client).todos(ArgumentMatchers.any(RespostaListener.class));
-     verify(adapter).atualiza(new ArrayList<Leilao>(Arrays.asList(
-             new Leilao("cheesecake"),
-             new Leilao("Banoffe")
-     )));
+        verify(client).todos(any(RespostaListener.class));
+        verify(adapter).atualiza(new ArrayList<Leilao>(Arrays.asList(
+                new Leilao("cheesecake"),
+                new Leilao("Banoffe")
+        )));
+
+    }
+
+    @Test
+    public void deve_ApresentarMensagemDeFalha_QuandoFalharBuscaDeLEiloes() {
+
+        AtualizadorDeLeiloes atualizador = new AtualizadorDeLeiloes();
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                RespostaListener<List<Leilao>> argument = invocation.getArgument(0);
+                argument.falha(Mockito.anyString());
+                return null;
+            }
+        }).when(client).todos(any(RespostaListener.class));
+
+        atualizador.buscaLeiloes(adapter, client, listener);
+
+        verify(listener).erroAoCarregar(Mockito.anyString());
 
     }
 
